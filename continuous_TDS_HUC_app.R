@@ -22,9 +22,9 @@ continuous_roadsalt<-read_xlsx("specific_conductance_calculated_tds_data.xlsx",c
 continuous_roadsalt<-continuous_roadsalt%>%
   mutate(stdate =  as.Date(Date_Time))%>%
   mutate(year = year(stdate))
-## Read in chloride & TDS duration exceedance datasets ###
+### Read in chloride & TDS duration exceedance datasets ###
 TDS_duration<-read_xlsx("TDS_duration_exceedances.xlsx",col_names = T)%>%
-  dplyr::mutate(month_hrs = case_when(
+  dplyr::mutate(month_hrs = case_when( ### This adds these values in a new column based on month
     str_detect(month,"01")~"744",
     str_detect(month,"02")~"672",
     str_detect(month,"03")~"744",
@@ -37,7 +37,10 @@ TDS_duration<-read_xlsx("TDS_duration_exceedances.xlsx",col_names = T)%>%
     str_detect(month,"10")~"744",
     str_detect(month,"11")~"720",
     str_detect(month,"12")~"744",
-    TRUE~month),month_hrs = as.numeric(month_hrs),percent_exceeding_hours = round((timehrs/month_hrs)*100))
+    TRUE~month),month_hrs = as.numeric(month_hrs),percent_exceeding_hours = round((timehrs/month_hrs)*100))%>%
+    complete(month,Station,fill = list('Total Number of Exceedance' = 0, 'Huc14' = 0, 'timehrs' = 0, ### Complete function will fill in missing rows for unrepresented factor levels, you can additionally specify the values to fill with by passing the values in a list
+                                       "month_hrs" = 0,"percent_exceeding_hours" = 0))
+
 cl_acute<-read_xlsx("Acute_Chloride_Exceedances.xlsx",col_names = T)
 cl_chronic<-read_xlsx("Chronic_Chloride_Exceedances.xlsx",col_names = T)
 ### Need to take HUC out of HUC number for couple of them to match with discrete data ###
@@ -134,6 +137,7 @@ sidebar<-dashboardSidebar(
               #value = c(2000,2018),
               #sep="",
               #step=1))
+################################################################################
 ### Creates body of app###
 body<-dashboardBody(
   tags$head(tags$style(HTML(
@@ -156,9 +160,12 @@ body<-dashboardBody(
             
             fluidRow(
               box(width = 12,leafletOutput("wma")%>%withSpinner(type = 5, color = "blue")))),
-    tabItem(tabName = "dur",plotlyOutput("plot2")%>%withSpinner(type = 5, color = "blue"),
+    tabItem(tabName = "dur",
             pickerInput("station","Select Station:",choices = TDS_duration$Station,
-                        options = list(title = "Please choose station")))))
+                        options = list(title = "Please choose station")),
+            rbokehOutput("plot2",width = "100%",height = "800px")%>%withSpinner(type = 5, color = "blue"),
+            rbokehOutput("plot3",width = "100%",height = "800px")%>%withSpinner(type = 5, color = "blue"))))
+################################################################################
 ### Create ui ###
 ui<- dashboardPage(header = header,
                    sidebar = sidebar,
@@ -169,7 +176,8 @@ ui<- dashboardPage(header = header,
 ### Create server of app ###
 server<- function(input,output,session){
   
-  ### Creates pop up giving instructions on how to use app...only pops up when action button is clicked ###
+### Creates pop up giving instructions on how to use app...only pops up when action button is clicked ###
+################################################################################
   observeEvent(input$preview,{
     showModal(modalDialog(
       title = "Information About App",
@@ -221,7 +229,7 @@ server<- function(input,output,session){
   ### Gets line shapes for plots ###
   #my_shapes = c(20,20,NA)
 ################################################################################   
-  ### Creates interactive graph###
+### Creates interactive graph###
   output$plot<- renderRbokeh({
     req(input$huc)
     figure(xlab = "Year",ylab = "TDS Concentration (mg/L)",
@@ -277,7 +285,7 @@ server<- function(input,output,session){
      # plotlyProxyInvoke("relayout")
  # })
 ################################################################################
-  ### Creates interactive map of WMAs and HUC14s ###
+### Creates interactive map of WMAs and HUC14s ###
   output$wma<-renderLeaflet({
     leaflet(options = leafletOptions(minZoom = 7))%>%
       addTiles()%>%
@@ -288,6 +296,7 @@ server<- function(input,output,session){
       addPolygons(data = WMA_NJ,color = "#1111B8",weight = 2,smoothFactor = 1,
                   opacity = 0.5, fillOpacity = 0.1,fillColor = "white",stroke = T)%>%
       addPolygons(data = hucs,color = "#636060",fillColor = "#00FFFFFF",layerId = ~HUC14,weight = 1,
+                  opacity = 0.5, fillOpacity = 0.1,
                   popup = paste("HUC14 Name:\n",hucs$AU_NAME,"<br>",
                                 "HUC14#:\n",hucs$HUC14,"<br>",
                                 "WMA#:",hucs$WMA,sep = ""),
@@ -299,7 +308,7 @@ server<- function(input,output,session){
         options = layersControlOptions(collapsed = FALSE))
   })
 ################################################################################
-  ### Highlights polygon when huc is clicked on drop down menu ###
+### Highlights polygon when huc is clicked on drop down menu ###
   observeEvent(input$huc,{
     
     proxy<- leafletProxy("wma")
@@ -371,18 +380,24 @@ server<- function(input,output,session){
   })
   
 ################################################################################ 
-### Make Length of exceedance plots under the durr tab ###
-  output$plot2<-renderPlotly({
+### Make Length of exceedance plots under the duration exceedance plots tab ###
+  output$plot2<-renderRbokeh({
     req(input$station)
-    g<-ggplot(data = TDS_duration_react(),aes(x=month,y=percent_exceeding_hours,group = 1))+
-      geom_bar(stat="identity",na.rm=T,fill="#0505FF",width = 0.5)+
-      labs(y="% Of Time Exceeding Per Hours in Month")+
-      ggtitle(paste0("% Of Time Exceeding Per Hours in Month of Calculated TDS Exceedances > 500 mg/L\n(based on specific conductance measurements)\n","Station:",input$station))+
-      scale_y_continuous(labels=function(y) paste0(y,"%"),expand = c(0, 0))+
-      theme_graphs
-      
-    
-    ggplotly(g)
+    figure(xlab = "month",ylab = "% Of Time Exceeding Per Hours in Month",
+           title = paste0("% Of Time Exceeding Per Hours in Month of Calculated TDS Exceedances > 500 mg/L\n(Based on Specific Conductance Measurements)\n","Station: ",input$station,sep = ""),
+           width = 1800, height = 800)%>%
+      ly_bar(x=month, y=percent_exceeding_hours,data=TDS_duration_react())%>%
+      y_axis(number_formatter = "numeral")
+
+  })
+  
+### Make plot of total # of hours of exceedance under the duration exceedance plots tab ###
+  output$plot3<-renderRbokeh({
+    req(input$station)
+    figure(xlab = "month",ylab = "Number of Hours with Calculated TDS concentration >500 (mg/L)",
+           title = paste0("Number of Hours with Calculated TDS concentration >500 (mg/L)(Based on Continuous Specific Conductance) Station: ",
+                          input$station,sep = ""),width = 1800, height = 800)%>%
+      ly_bar(x=month, y=timehrs,data=TDS_duration_react())
     
   })
 
