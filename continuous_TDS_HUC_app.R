@@ -109,38 +109,42 @@ header<-dashboardHeader(title="NJDEP Water Quality Data Viewer App:
                         Freshwater Streams Impacted by Total Dissolved Solids",titleWidth = 900)
 ### Creates left sidebar with widgets ###
 sidebar<-dashboardSidebar(
-  sidebarMenu(
+  sidebarMenu(id = "sidebar",
     menuItem("Time Series Plot",
             tabName = "home",
-              icon = icon("home")),                 
- actionButton("preview","Click to learn more about app",style='padding:4px; font-size:80%'),
- 
-  radioButtons("button","Choose Which Type of HUC14\n(based on the 2016 303(d) list):",
-               choices = c("Impaired","Not Impaired"),
-               selected = "Impaired",inline = T),
-  #selectInput("huc","Select HUC:",choices = impaired_HUCS),
-  uiOutput("huc"),
-  sliderInput("alpha","Select Shade of measured\ndata points (blue dots) and SWQS (red line):",min = 0,max = 0.8,value=0.5),
-  sliderInput("alpha2","Select shade of estimated TDS based on continuous specific conductance data:",min = 0,max = 0.5,value=0.5),
- 
- menuItem("Duration Exceedance Plots",
-          tabName = "dur",
-          icon = icon("bar-chart-o"))),
+              icon = icon("home")),
+### Need to use conditionalPanel() to have widgets disappear once duration exceedance plots tab in clicked ###  
+    conditionalPanel(
+      condition = "input.sidebar == 'home'",
+      actionButton("preview","Click to learn more about app",style='padding:4px; font-size:80%'),
+      
+      radioButtons("button","Choose Which Type of HUC14\n(based on the 2016 303(d) list):",
+                   choices = c("Impaired","Not Impaired"),
+                   selected = "Impaired",inline = T),
+      #selectInput("huc","Select HUC:",choices = impaired_HUCS),
+      uiOutput("huc"),
+      sliderInput("alpha","Select Shade of measured\ndata points (blue squares) and SWQS (red line):",
+                  min = 0,max = 0.8,value=0.5),
+      sliderInput("alpha2","Select shade of estimated TDS based on continuous specific conductance data:",
+                  min = 0,max = 0.5,value=0.5)),
+    menuItem("Duration Exceedance Plots",
+             tabName = "dur",
+             icon = icon("bar-chart-o"))),
           #selectizeInput("station","Select Monitoring Station:",TDS_duration$Station)),
- HTML("<h4>&nbsp; &nbsp; &nbsp; Author: Kevin Zolea </h4>"),
+ HTML("<h4>&nbsp; &nbsp; &nbsp; Author: Kevin Zolea </h4>"), ### Uses HTML to put author information in center of sidebar ###
  tags$a(href="https://www.nj.gov/dep/", target="_blank",
         img(width= 100,height = 100,src="https://www.nj.gov/dep/awards/images/deplogoB.jpg",class="road_pics",
-            class="NJDEP_pic")))
+            class="NJDEP_pic"))) ### Uses HTML tag to add hyperlink image to bottom of sidebar ###
   #sliderInput("year","Select Year Range",
               #min=2000,
               #max=2018,
-              #value = c(2000,2018),
+              #value = c(2000,2018),      
               #sep="",
               #step=1))
 ################################################################################
 ### Creates body of app###
 body<-dashboardBody(
-  tags$head(tags$style(HTML(
+  tags$head(tags$style(HTML(    ### Uses HTML to change size of NJDEP logo & makes it reactive ###
     '.NJDEP_pic{
         width: auto;
         height: 100%;
@@ -386,8 +390,9 @@ server<- function(input,output,session){
     figure(xlab = "month",ylab = "% Of Time Exceeding Per Hours in Month",
            title = paste0("% Of Time Exceeding Per Hours in Month of Calculated TDS Exceedances > 500 mg/L\n(Based on Specific Conductance Measurements)\n","Station: ",input$station,sep = ""),
            width = 1800, height = 800)%>%
-      ly_bar(x=month, y=percent_exceeding_hours,data=TDS_duration_react())%>%
-      y_axis(number_formatter = "numeral")
+      ly_bar(x=month, y=percent_exceeding_hours,data=TDS_duration_react(), hover= TRUE)%>%
+      y_axis(number_formatter = "numeral")%>%
+      y_range(c(0,100))
 
   })
   
@@ -397,7 +402,9 @@ server<- function(input,output,session){
     figure(xlab = "month",ylab = "Number of Hours with Calculated TDS concentration >500 (mg/L)",
            title = paste0("Number of Hours with Calculated TDS concentration >500 (mg/L)(Based on Continuous Specific Conductance) Station: ",
                           input$station,sep = ""),width = 1800, height = 800)%>%
-      ly_bar(x=month, y=timehrs,data=TDS_duration_react())
+      ly_bar(x=month, y=timehrs,data=TDS_duration_react(), hover = TRUE)%>%
+      y_range(c(0,max(TDS_duration_react()$timehrs)))
+    
     
   })
 
