@@ -12,34 +12,33 @@
 #               "gridExtra","stringr","data.table","rlang","purrr","rmapshaper","shinyalert",
 #               "shinydashboard","shiny","shinycssloaders","plotly","sf","leaflet","leaflet.extras")
 ###############################################################################
-library_location <- "//dep-tcshared/shared/lum/WM&S/BEAR (Bureau of Environmental Analysis and Restoration)/Envpln/Hourly Employees/Rosenman/shinyApps/R-Portable/App/R-Portable/library"
-library(ggplot2, lib.loc = library_location)
-library(tidyr, lib.loc = library_location)
-library(plyr, lib.loc = library_location)
-library(dplyr, lib.loc = library_location)
-library(readxl, lib.loc = library_location)
-library(htmlwidgets, lib.loc = library_location)
-library(readr, lib.loc = library_location)
-library(cowplot, lib.loc = library_location)
-library(lubridate, lib.loc = library_location)
-library(ggpubr, lib.loc = library_location)
-library(scales, lib.loc = library_location)
-library(gridExtra, lib.loc = library_location)
-library(stringr, lib.loc = library_location)
-library(data.table, lib.loc = library_location)
-library(rlang, lib.loc = library_location)
-library(purrr, lib.loc = library_location)
-library(rmapshaper, lib.loc = library_location)
-library(shinyalert, lib.loc = library_location)
-library(shinydashboard, lib.loc = library_location)
-library(shiny, lib.loc = library_location)
-library(shinycssloaders, lib.loc = library_location)
-library(plotly, lib.loc = library_location)
-library(plotly, lib.loc = library_location)
-library(sf, lib.loc = library_location)
-library(leaflet, lib.loc = library_location)
-library(leaflet.extras, lib.loc = library_location)
-library(rbokeh, lib.loc = library_location)
+library(ggplot2)
+library(tidyr)
+library(plyr)
+library(dplyr)
+library(readxl)
+library(htmlwidgets)
+library(readr)
+library(cowplot)
+library(lubridate)
+library(ggpubr)
+library(scales)
+library(gridExtra)
+library(stringr)
+library(data.table)
+library(rlang)
+library(purrr)
+library(rmapshaper)
+library(shinyalert)
+library(shinydashboard)
+library(shiny)
+library(shinycssloaders)
+library(plotly)
+library(plotly)
+library(sf)
+library(leaflet)
+library(leaflet.extras)
+library(rbokeh)
 ### Read data in ###
 ### Read discrete data in ###
 discrete_roadsalt<-read_tsv("cleanest_qa_dataset.tsv",col_names = T)
@@ -124,7 +123,7 @@ sidebar<-dashboardSidebar(br(),
   #selectInput("huc","Select HUC:",choices = impaired_HUCS),
   uiOutput("huc"),
   sliderInput("alpha","Select Shade of measured\ndata points (blue dots) and SWQS (red line):",min = 0,max = 0.8,value=0.5),
-  sliderInput("alpha2","Select shade of estimated TDS based on continuous specific conductance data (green dots):",min = 0,max = 0.5,value=0.5),
+  sliderInput("alpha2","Select shade of estimated TDS based on continuous specific conductance data:",min = 0,max = 0.5,value=0.5),
   HTML("<h4>&nbsp; &nbsp; &nbsp; Author: Kevin Zolea </h4>"))
   #sliderInput("year","Select Year Range",
               #min=2000,
@@ -212,7 +211,7 @@ server<- function(input,output,session){
       ly_abline(h=500,color="red",legend = "Freshwater Aquatic Life Criteria\nfor TDS = 500 mg/L",
                 alpha = input$alpha,width=5)%>%
     theme_legend(background_fill_alpha = 0.5)%>%
-      theme_title(text_font_style = "bold",text_align = "center")
+      theme_title(text_font_style = "bold")#,text_align = "center")
   })
   
   
