@@ -1,7 +1,6 @@
 ########## Download necessary packages to make script run #########################################################################
 ### App to assist with TDS impairments for roadsalt project ###
 ### Author: Kevin Zolea ###
-### Date:11/2018 ###
 #if (!require(pacman)) {
   #install.packages('pacman')
   
@@ -69,7 +68,7 @@ continuous_roadsalt$HUC14<-gsub("002040301030010","02040301030010",continuous_ro
 ### Read in shapefile to get WMA areas ###
 ### Change Projection to match leaflet map ###
 ### drop z dimension and simplify shapefile to render faster ###
-WMA_NJ<-st_read(getwd(),layer= "WMAs")%>%
+WMA_NJ<-st_read("shapefiles/WMAs.shp")%>%
   st_transform(WMA_NJ,crs="+init=epsg:4326")%>%
   st_zm(WMA_NJ, drop = T, what = "ZM")%>%
   ms_simplify(.)
@@ -78,7 +77,7 @@ names(st_geometry(WMA_NJ))= NULL
 ### Read in HUC14s ###
 ### Change Projection to match leaflet map ###
 ### drop z dimension and simplify shapefile to render faster ###
-hucs<-st_read(getwd(),layer = "2014_NJ_Integrated_Report_AU")%>%
+hucs<-st_read("shapefiles/2014_NJ_Integrated_Report_AU.shp")%>%
   st_transform(hucs,crs="+init=epsg:4326")%>%
   st_zm(hucs,drop = T, what = "ZM")%>%
   ms_simplify(.)
@@ -257,7 +256,7 @@ server<- function(input,output,session){
       addTiles()%>%
       addResetMapButton()%>%
       addProviderTiles(providers$OpenStreetMap.BlackAndWhite, group = "Grey") %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+      #addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
       setView(lng = -74.4 ,lat =40, zoom = 7)%>%
       addPolygons(data = WMA_NJ,color = "#1111B8",weight = 2,smoothFactor = 1,
                   opacity = 0.5, fillOpacity = 0.1,fillColor = "white",stroke = T)%>%
@@ -320,14 +319,14 @@ server<- function(input,output,session){
   })
   
 ### Allows user to have map zoomed in when impaired HUC is clicked ###
-  #observe({
-    #click <- input$wma_shape_click
-    #if(is.null(click))
-    #  return()
-    #else
-     # leafletProxy("wma")%>%
-     # setView(lng = click$lng , lat = click$lat, zoom=10)
- # })
+  observe({
+    click <- input$wma_shape_click
+    if(is.null(click))
+      return()
+    else
+     leafletProxy("wma")%>%
+      setView(lng = click$lng , lat = click$lat, zoom=10)
+  })
   
   #output$download<- downloadHandler(
     #filename = function(){
